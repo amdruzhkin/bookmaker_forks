@@ -1,5 +1,6 @@
 import requests as requests
 
+available_sports = ['Хоккей', 'Футбол', 'Баскетбол', 'Теннис', 'Волейбол']
 
 class Fonbet:
     def __init__(self):
@@ -11,6 +12,9 @@ class Fonbet:
 
         for event in response['events']:
             sport = event['skName']
+            if sport not in available_sports:
+                continue
+
             if sport not in self.line_events:
                 self.line_events[sport] = {}
 
