@@ -16,9 +16,9 @@ class Onexbet:
 
     def run(self):
         self.get_line_events()
-
-        # with open('onexbet_result.json', 'w', encoding='utf-8') as f:
-        #     json.dump(self.line_events, f, ensure_ascii=False, indent=4)
+        print(f'1xBet events: {len(self.line_events)}')
+        with open('onexbet_result.json', 'w', encoding='utf-8') as f:
+            json.dump(self.line_events, f, ensure_ascii=False, indent=4)
 
     def get_line_events(self):
         endpoints = ['football', 'volleyball', 'basketball', 'tennis', 'ice-hockey']
@@ -51,28 +51,44 @@ class Onexbet:
     def get_event(self, event_id):
         url = f'https://1xstavka.ru/LineFeed/GetGameZip?id={event_id}&isSubGames=true&GroupEvents=true&allEventsGroupSubGames=true&countevents=250&partner=51&grMode=2&marketType=1&gr=44&isNewBuilder=true'
         response = requests.get(url).json()['Value']
-        sport = response["SN"]
-        if sport not in self.line_events:
-            self.line_events[sport] = {}
+        try:
+            team_1 = str(response["O1"]).replace('(жeн)', '')
+            team_1 = team_1.replace('(жен)', '')
+            team_1 = team_1.replace('(ж)', '')
+            team_1 = team_1.lstrip()
+            team_1 = team_1.rstrip()
 
-        league = response["L"]
-        if league not in self.line_events[sport]:
-            self.line_events[sport][league] = []
+            team_2 = str(response["O2"]).replace('(жeн)', '')
+            team_2 = team_2.replace('(жен)', '')
+            team_2 = team_2.replace('(ж)', '')
+            team_2 = team_2.lstrip()
+            team_2 = team_2.rstrip()
 
-        self.line_events[sport][league].append(
-            {
-                'id': int(event_id),
-                'start_time': response['S'],
-                'event_name': f'{response["O1"]} — {response["O2"]}',
-                'coefficients': self.get_coefficients(response)
-            }
-        )
+            event_name = f'{team_1} — {team_2}'
+
+            if response['S'] <= time.time():
+                return
+
+            if event_name in self.line_events:
+                # print(f'{event_name} already exist')
+                ...
+            else:
+                self.line_events[event_name] = {
+                    'id': int(event_id),
+                    'start_time': response['S'],
+                    'sport': response["SN"],
+                    'league': response["L"],
+                    'coefficients': self.get_coefficients(response)
+                }
+        except Exception as e:
+            ...
+
 
     def get_coefficients(self, data):
         coefficients = {}
         mapping = {
-            1: 'WRT1',
-            3: 'WRT2',
+            1: 'WRT_1',
+            3: 'WRT_2',
             401: 'WM1',
             402: 'WM2',
             9: 'TLT',
@@ -86,16 +102,5 @@ class Onexbet:
                             coefficients[f'{mapping[j["T"]]}_{j["P"]}'] = j['C']
                         else:
                             coefficients[mapping[j['T']]] = j['C']
-
-
-
-        # coefficients['W1'] = data['GE'][2]['E'][0][0]['C']
-        # coefficients['W2'] = data['GE'][2]['E'][1][0]['C']
-        #
-        # for factor in data['GE'][4]['E'][0]:
-        #     coefficients[f'TLT_{factor["P"]}'] = factor['C']
-        #
-        # for factor in data['GE'][4]['E'][1]:
-        #     coefficients[f'TMT_{factor["P"]}'] = factor['C']
 
         return coefficients
