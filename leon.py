@@ -19,9 +19,9 @@ class Leon:
                 league_events_tasks.append(asyncio.ensure_future(self.get_league_events(session, league_id)))
             await asyncio.gather(*league_events_tasks)
 
-        for event_name, event_data in self.line.items():
-            print(event_name, event_data)
-        print(len(self.line))
+        # for event_name, event_data in self.line.items():
+        #     print(event_name, event_data)
+        # print(len(self.line))
 
     async def get_leagues(self, session):
         url = 'https://leon.ru/api-2/betline/sports?ctag=ru-RU&flags=urlv2'
@@ -60,5 +60,6 @@ class Leon:
               f'{event["id"]}-{event["url"]}'
         return {
             'id': event['id'],
-            'url': url
+            'url': url,
+            'start_time': int(str(event['kickoff'])[:-3])
         }
